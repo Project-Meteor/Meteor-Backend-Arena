@@ -4,10 +4,12 @@ const fs = require("fs");
 const app = express.Router();
 const log = require("../structs/log.js");
 const path = require("path");
-
+const { getAccountIdData, addEliminationHypePoints, addVictoryHypePoints, deductBusFareHypePoints } = require("./../structs/functions.js");
 const { verifyToken, verifyClient } = require("../tokenManager/tokenVerify.js");
-
+const User = require("../model/user.js");
+const Arena = require("../model/arena.js");
 const config = JSON.parse(fs.readFileSync("./Config/config.json").toString());
+
 
 app.post("/fortnite/api/game/v2/chat/*/*/*/pc", (req, res) => {
     log.debug("POST /fortnite/api/game/v2/chat/*/*/*/pc called");
@@ -170,9 +172,32 @@ app.get("/fortnite/api/game/v2/enabled_features", (req, res) => {
     res.json([]);
 });
 
-app.get("/api/v1/events/Fortnite/download/*", (req, res) => {
-    log.debug("GET /api/v1/events/Fortnite/download/* called");
-    res.json({});
+app.get("/api/v1/events/Fortnite/download/*", async (req, res) => {
+    const accountId = req.params.account_id;
+
+    try {
+        const playerData = await Arena.findOne({ accountId });
+        const hypePoints = playerData ? playerData.hype : 0;
+        const division = playerData ? playerData.division : 0;
+
+        const eventsDataPath = path.join(__dirname, "./../responses/eventlistactive.json");
+        const events = JSON.parse(fs.readFileSync(eventsDataPath, 'utf-8'));
+
+        events.player = {
+            accountId: accountId,
+            gameId: "Fortnite",
+            persistentScores: {
+                Hype: hypePoints
+            },
+            tokens: [`ARENA_S8_Division${division + 1}`]
+        };
+
+        res.json(events);
+
+    } catch (error) {
+        console.error("Error fetching Arena data:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
 });
 
 app.get("/fortnite/api/game/v2/twitch/*", (req, res) => {
@@ -204,12 +229,6 @@ app.get("/fortnite/api/receipts/v1/account/*/receipts", (req, res) => {
 app.get("/fortnite/api/game/v2/leaderboards/cohort/*", (req, res) => {
     log.debug("GET /fortnite/api/game/v2/leaderboards/cohort/* called");
     res.json([]);
-});
-
-app.post("/datarouter/api/v1/public/data", (req, res) => {
-    log.debug("POST /datarouter/api/v1/public/data called");
-    res.status(204);
-    res.end();
 });
 
 app.post("/api/v1/assets/Fortnite/*/*", async (req, res) => {
@@ -298,5 +317,43 @@ app.get("/fortnite/api/game/v2/br-inventory/account/*", async (req, res) => {
         }
     })
 })
+
+app.post("/datarouter/api/v1/public/data", async(req, res) => {
+    const accountId = getAccountIdData(req.query.UserID);
+    const data = req.body.Events;
+
+    if (data && data.length > 0) {
+        for (var event of data) {
+            if (event.EventName && event.ProviderType) {
+                if (event.ProviderType == "Client") {
+                    const findUser = await User.findOne({ "accountId": accountId });
+                    var playerKills = Number(event.PlayerKilledPlayerEventCount);
+                    
+                    // Events from s8 (some can work for other seasons)
+                    if (findUser) {
+                        switch (event.EventName) {
+                            case "Athena.ClientWonMatch": // Win Game
+                                await addVictoryHypePoints(findUser);
+                                break;
+                            case "Combat.AthenaClientEngagement": // PlayerKills
+
+                                for (let i = 0; i < playerKills; i++) { // Add point per elimination
+                                    await addEliminationHypePoints(findUser);
+                                }
+                                break;
+                                case "Combat.ClientPlayerDeath":
+                                await deductBusFareHypePoints(findUser)
+                                    break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    res.status(204).end();
+});
 
 module.exports = app;

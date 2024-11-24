@@ -417,6 +417,97 @@ function UpdateTokens() {
     }, null, 2));
 }
 
+
+// Function to add Arena point in the listed event
+async function getDivisionPoints(accountId, statType) {
+    const eventListPath = path.join(__dirname, "./../responses/eventlistactive.json");
+    const eventList = JSON.parse(fs.readFileSync(eventListPath, 'utf-8'));
+    const playerData = await Arena.findOne({ accountId });
+    const playerDivision = playerData ? playerData.division : 0;
+
+    const eventWindow = eventList.events[0].eventWindows.find(
+        window => window.metadata.divisionRank === playerDivision
+    );
+
+    if (!eventWindow) {
+        console.log("Division non trouvée dans la liste des événements.")
+        throw new Error("Division non trouvée dans la liste des événements.");
+    }
+
+    const scoringRule = eventList.templates.find(template => 
+        template.eventTemplateId === eventWindow.eventTemplateId
+    ).scoringRules.find(rule => rule.trackedStat === statType);
+
+    if (scoringRule) {
+        const pointsEarned = scoringRule.rewardTiers[0].pointsEarned;
+        return pointsEarned;
+    }
+
+    return 0;
+}
+
+async function addEliminationHypePoints(user) {
+    const points = await getDivisionPoints(user.account_id, "TEAM_ELIMS_STAT_INDEX");
+    return await updateHypePoints(user, points);
+}
+
+async function addVictoryHypePoints(user) {
+    const points = await getDivisionPoints(user.account_id, "PLACEMENT_STAT_INDEX");
+    return await updateHypePoints(user, points);
+}
+
+async function deductBusFareHypePoints(user) {
+    const points = await getDivisionPoints(user.account_id, "MATCH_PLAYED_STAT");
+    return await updateHypePoints(user, -points);
+}
+
+async function updateHypePoints(user, points) {
+    const accountId = user.account_id || user.accountId;
+
+    let playerData = await Arena.findOne({ accountId });
+    let currentHype = playerData ? playerData.hype : 0;
+    let currentDivision = playerData ? playerData.division : 0;
+
+    currentHype += points;
+
+    const nextDivision = getNextDivision(currentHype, currentDivision);
+    currentDivision = nextDivision;
+
+    await Arena.updateOne(
+        { accountId },
+        { 
+            $set: {
+                accountId: accountId,
+                hype: currentHype,
+                division: currentDivision
+            }
+        },
+        { upsert: true }
+    );
+
+    return {
+        success: true,
+        data: `Points mis à jour à ${currentHype}, Division actuelle : ${currentDivision}`,
+    };
+}
+
+
+function getNextDivision(hypePoints, currentDivision) {
+    const thresholds = [500, 1000, 1500, 2000, 2500, 3000, 99999999];
+    for (let i = 0; i < thresholds.length; i++) {
+        if (hypePoints < thresholds[i]) return i;
+    }
+    return currentDivision;
+}
+
+
+
+function getAccountIdData(UserID) {
+    const account_id = UserID ? UserID.split("|")[1] : "";
+
+    return account_id;
+}
+
 module.exports = {
     sleep,
     GetVersionInfo,
@@ -430,5 +521,9 @@ module.exports = {
     registerUser,
     createSAC,
     DecodeBase64,
-    UpdateTokens
+    UpdateTokens,
+    getAccountIdData,
+    addEliminationHypePoints,
+    addVictoryHypePoints,
+    deductBusFareHypePoints
 }
