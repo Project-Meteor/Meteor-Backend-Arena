@@ -20,6 +20,14 @@
     "//": "If you want to use the backend on reboot, leave 3551 as the port",
     "port": 3551, 
     
+    "Api": {
+      "bApiKey": "ur-api-key",
+      "reasons": {
+        "Kill": 25,
+        "Win": 50
+      }
+    },
+
     "Website": {
       "bUseWebsite": false,
       "clientId": "your-client-id-here",
@@ -40,8 +48,10 @@
     "bUseAutoRotate": false,
     "bEnableAutoRotateDebugLogs": false,
     "bEnableDiscordWebhook": false,
-    "bSeasonlimit": 10,
+    "bChapterlimit": "1",
+    "bSeasonlimit": "10",
     "bRotateTime": "00:00",
+    "bExcludedItems": ["CID_VIP_Athena_Commando_M_GalileoGondola_SG", "CID_636_Athena_Commando_M_GalileoGondola_78MFZ", "CID_637_Athena_Commando_M_GalileoOutrigger_7Q0YU", "CID_VIP_Athena_Commando_M_GalileoFerry_SG", "CID_VIP_Athena_Commando_F_GalileoRocket_SG", "CID_568_Athena_Commando_M_RebirthSoldier"],
     "bItemShopWebhook": "",
     "bDailyItemsAmount": 6,
     "bFeaturedItemsAmount": 2,
@@ -60,6 +70,10 @@
     "//": "For 'bRestartTime' use this format: [number][y, M, w, d, h, m, s] so 5m, for Month u need to add the big M not the m",
     "bEnableAutoBackendRestart": false,
     "bRestartTime": "",
+
+    "//": "If active it will send a message in the channel when the backend goes online",
+    "bEnableBackendStatus": false,
+    "bBackendStatusChannelId": "",
 
     "//": "Use HTTPS (For VPS Side Only, Or If You Were To Setup  A Type Record To Your Own Public Adress From Your Domain) (You Also Need To Change The Examples In SSl Folder!)",
     "bEnableHTTPS": false, "//": "Only Enable if You Have SSL Certificate In The ssl Folder",
