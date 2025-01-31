@@ -1,6 +1,6 @@
 # Reload Backend
 
-![Imgur](https://imgur.com/L06O0IJ.png)
+![Imgur](https://i.imgur.com/ImIwpRm.png)
 
 Reload Backend is a universal Fortnite private server backend written in [JavaScript](https://en.wikipedia.org/wiki/JavaScript)
 
@@ -41,7 +41,7 @@ Created by [Burlone](https://github.com/burlone0), This is a modded backend, all
     * [x] You can get help from your party to complete missions.
 * In-Game Events:
     * [x] You will be able to activate various events that occurred in the game such as the rift in the sky and much more!
-* Winterfest Event (11.31, 19.01 & 23.10 / BETA):
+* Winterfest Event (11.31, 19.01, 23.10, 33.11):
     * [x] The winterfest event should work with all its rewards!
 * SAC (Support A Creator):
     * [x] It supports a supported creator, you can set it using the `/createsac {code} {ingame-username}` command on discord.
@@ -62,6 +62,7 @@ Created by [Burlone](https://github.com/burlone0), This is a modded backend, all
 ## TO-DO
 - [ ] Differentiate ports between xmpp and matchmaker
 - [ ] Create a support with save the world
+- [ ] Create a support with creative
 
 ## Discord Bot Commands
 ### User Commands:
@@ -81,8 +82,11 @@ Created by [Burlone](https://github.com/burlone0), This is a modded backend, all
 - `/addall {user}` - Allows you to give a user all cosmetics. Note: This will reset all your lockers to default
 - `/addvbucks {user} {vbucks}` - Lets you change a users amount of vbucks
 - `/additem {user} {cosmeticname}` - The name of the cosmetic you want to give
+- `/create-custom-match-code {code} {ip} {port}` - Create a custom matchmaking code.
 - `/ban {targetUsername}` - Ban a user from the backend by their username.
+- `/createhostaccount` - Creates a host account for Reload Backend.
 - `/createsac {code} {ingame-username}` - Creates a Support A Creator Code.
+- `/custom-match-code-list` - Lists all custom matchmaking codes.
 - `/delete {username}` - Deletes a users account
 - `/deletediscord {username}` - Deletes a users account
 - `/deletesac {username}` - Deletes a Support A Creator Code.
