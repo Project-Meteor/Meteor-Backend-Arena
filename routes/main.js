@@ -339,42 +339,63 @@ app.get("/fortnite/api/game/v2/br-inventory/account/*", async (req, res) => {
     })
 })
 
-app.post("/datarouter/api/v1/public/data", async(req, res) => {
-    const accountId = getAccountIdData(req.query.UserID);
-    const data = req.body.Events;
+app.post("/datarouter/api/v1/public/data", async (req, res) => {
+    try {
+        const accountId = getAccountIdData(req.query.UserID);
+        const data = req.body.Events;
 
-    if (data && data.length > 0) {
-        for (var event of data) {
-            if (event.EventName && event.ProviderType) {
-                if (event.ProviderType == "Client") {
-                    const findUser = await User.findOne({ "accountId": accountId });
-                    var playerKills = Number(event.PlayerKilledPlayerEventCount);
-                    
-                    // Events from s8 (some can work for other seasons)
-                    if (findUser) {
-                        switch (event.EventName) {
-                            case "Athena.ClientWonMatch": // Win Game
+        if (Array.isArray(data) && data.length > 0) {
+            const findUser = await User.findOne({ accountId });
+
+            if (findUser) {
+                for (const event of data) {
+                    const { EventName, ProviderType, PlayerKilledPlayerEventCount } = event;
+
+                    if (EventName && ProviderType === "Client") {
+                        const playerKills = Number(PlayerKilledPlayerEventCount) || 0;
+
+                        switch (EventName) {
+                            case "Athena.ClientWonMatch": // When a player wins a match
+
                                 await addVictoryHypePoints(findUser);
-                                break;
-                            case "Combat.AthenaClientEngagement": // PlayerKills
 
-                                for (let i = 0; i < playerKills; i++) { // Add point per elimination
-                                    await addEliminationHypePoints(findUser);
-                                }
+                                console.log(`Added victory hype points for user: ${accountId}`);
+
+
                                 break;
-                                case "Combat.ClientPlayerDeath":
-                                await deductBusFareHypePoints(findUser)
-                                    break;
+                            case "Combat.AthenaClientEngagement": // When a player kill someone
+
+                                for (let i = 0; i < playerKills; i++) {
+                                    await addEliminationHypePoints(findUser);
+                                    console.log(`Added elimination hype points for user: ${accountId}`);
+                                }
+
+                                break;
+
+                            case "Combat.ClientPlayerDeath": // When a player dies
+
+                                await deductBusFareHypePoints(findUser);
+
+                                console.log(`Deducted bus fare hype points for user: ${accountId}`);
+
+                                break;
                             default:
+                                // log.debug(`Event List: ${EventName}`); // If you want to get all the events, remove the comment from here
                                 break;
                         }
                     }
                 }
+            } else {
+                console.log(`User not found: ${accountId}`);
             }
         }
-    }
 
-    res.status(204).end();
+        res.status(204).end();
+    } catch (error) {
+        log.error("Error processing data:", error);
+        console.log("Error processing data:", error);
+        res.status(500).send("Internal Server Error");
+    }
 });
 
 module.exports = app;
